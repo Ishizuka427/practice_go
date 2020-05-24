@@ -40,7 +40,11 @@ func main() {
 
 	// 各ルーティングに対するハンドラを設定
 	e.GET("/", HandleIndexGet)
+	e.GET("/hello", HandleHelloGet)
+	e.POST("/hello", HandleHelloPost)
+	e.GET("/hello_form", HandleHelloFormGet)
 	e.GET("/api/hello", HandleAPIHelloGet)
+	e.POST("/api/hello", HandleAPIHelloPost)
 
 	// サーバーを開始
 	e.Logger.Fatal(e.Start(":3000"))
@@ -51,20 +55,54 @@ func init() {
 	loadTemplates()
 }
 
-// 各HTMLテンプレートに共通レイアウトを適用した結果を保存（初期化時に実行）。
+// 各HTMLテンプレートに共通レイアウトを適用した結果を保存します（初期化時に実行）。
 func loadTemplates() {
 	var baseTemplate = "templates/layout.html"
 	templates = make(map[string]*template.Template)
-	templates["index"] = template.Must(
+	templates["hello"] = template.Must(
 		template.ParseFiles(baseTemplate, "templates/hello.html"))
+	templates["hello_form"] = template.Must(
+		template.ParseFiles(baseTemplate, "templates/hello_form.html"))
 }
 
-// HandleIndexGet は Index のGet時のHTMLデータ生成処理を行う。
+// HandleIndexGet は Index のGet時のHTMLデータ生成処理を行います。
 func HandleIndexGet(c echo.Context) error {
-	return c.Render(http.StatusOK, "index", "World")
+	return c.Render(http.StatusOK, "hello", "world")
+}
+
+// HandleHelloGet は /hello のGet時のHTMLデータ生成処理を行います。
+func HandleHelloGet(c echo.Context) error {
+	greetingto := c.QueryParam("greetingto")
+	return c.Render(http.StatusOK, "hello", greetingto)
+}
+
+// HandleHelloPost は /hello のPost時のHTMLデータ生成処理を行います。
+func HandleHelloPost(c echo.Context) error {
+	greetingto := c.FormValue("greetingto")
+	return c.Render(http.StatusOK, "hello", greetingto)
+}
+
+// HandleHelloFormGet は /hello_form のGet時のHTMLデータ生成処理を行います。
+func HandleHelloFormGet(c echo.Context) error {
+	return c.Render(http.StatusOK, "hello_form", nil)
 }
 
 // HandleAPIHelloGet は /api/hello のGet時のJSONデータ生成処理を行います。
 func HandleAPIHelloGet(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{"hello": "world"})
+	greetingto := c.QueryParam("greetingto")
+	return c.JSON(http.StatusOK, map[string]interface{}{"hello": greetingto})
+}
+
+// HelloParam は /api/hello が受けとるJSONパラメータを定義します。
+type HelloParam struct {
+	GreetingTo string `json:"greetingto"`
+}
+
+// HandleAPIHelloPost は /api/hello のPost時のJSONデータ生成処理を行います。
+func HandleAPIHelloPost(c echo.Context) error {
+	param := new(HelloParam)
+	if err := c.Bind(param); err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]interface{}{"hello": param.GreetingTo})
 }
