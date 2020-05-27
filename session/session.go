@@ -77,3 +77,18 @@ func (m *Manager) LoadStore(sessionID ID) (Store, error) {
 	e.Logger.Debugf("Session[%s] Load store Error. [%s]", sessionID, ErrorOther)
 	return res, ErrorOther
 }
+
+// SaveStore は データストアの保存を行います。
+func (m *Manager) SaveStore(sessionID ID, sessionStore Store) error {
+	respCh := make(chan response, 1)
+	defer close(respCh)
+	req := []interface{}{sessionID, sessionStore}
+	cmd := command{commandSaveStore, req, respCh}
+	m.commandCh <- cmd
+	resp := <-respCh
+	if resp.err != nil {
+		e.Logger.Debugf("Session[%s] Save store Error. [%s]", sessionID, resp.err)
+		return resp.err
+	}
+	return nil
+}
